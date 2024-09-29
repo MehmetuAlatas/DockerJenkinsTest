@@ -1,5 +1,15 @@
 version: "3"  # Docker Compose versiyonunu belirtir. "3", yaygın kullanılan bir Compose dosyası sürümüdür.
 services: # Servislerin tanımlandığı bölüm. Bu projede üç adet browser (Chrome, Firefox, Edge) ve bir Hub servisi bulunmakta.
+  Jenkins:
+    image: jenkins/jenkins:jdk21
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    restart: on-failure
+
   HubService: # Selenium Hub servisini tanımlar. Hub, browser node'larının yönetildiği merkezi bir yapıdadır.
     image: selenium/hub:4.9.0  # Kullanılacak Docker imajı. Selenium Hub'ın 4.9.0 versiyonu kullanılıyor.
     container_name: seleniumHub  # Konteynerin adı. Docker içindeki bu servis "seleniumHub" adıyla çalışacak.
@@ -46,3 +56,5 @@ services: # Servislerin tanımlandığı bölüm. Bu projede üç adet browser (
       - SE_VNC_NO_PASSWORD=1  # VNC bağlantısı sırasında parola olmadan erişimi sağlar.
     depends_on: # Hub servisine bağımlılığı belirtir. Edge servisi, Hub servisinden sonra başlatılır.
       - HubService  # Hub servisinin başlatılmasını bekler, ardından Edge servisi çalışır.
+volumes:
+  jenkins_home:
