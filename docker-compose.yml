@@ -1,5 +1,5 @@
-version: "3"  # Docker Compose versiyonunu belirtir. "3", yaygın kullanılan bir Compose dosyası sürümüdür.
-services: # Servislerin tanımlandığı bölüm. Bu projede üç adet browser (Chrome, Firefox, Edge) ve bir Hub servisi bulunmakta.
+version: "3"
+services:
   Jenkins:
     image: jenkins/jenkins:jdk21
     container_name: jenkins
@@ -8,53 +8,68 @@ services: # Servislerin tanımlandığı bölüm. Bu projede üç adet browser (
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
+    networks:
+      - selenium-grid
     restart: on-failure
 
-  HubService: # Selenium Hub servisini tanımlar. Hub, browser node'larının yönetildiği merkezi bir yapıdadır.
-    image: selenium/hub:4.9.0  # Kullanılacak Docker imajı. Selenium Hub'ın 4.9.0 versiyonu kullanılıyor.
-    container_name: seleniumHub  # Konteynerin adı. Docker içindeki bu servis "seleniumHub" adıyla çalışacak.
+  HubService:
+    image: selenium/hub:4.9.0
+    container_name: seleniumHub
     ports:
-      - "4445:4444"  # Host makinedeki 4445 portu konteynerin 4444 portuna yönlendirilir (Hub'ın ana portu).
-      - "4442:4442"  # Hub tarafından kullanılan Event Bus Publish portu (Node'lar için olay gönderimi).
-      - "4443:4443"  # Hub tarafından kullanılan Event Bus Subscribe portu (Node'lar için olay dinlemesi).
-  ChromeService: # Chrome tarayıcı node'unu tanımlar.
-    image: selenium/node-chrome:4.9.0  # Kullanılacak Docker imajı. Selenium'un 4.9.0 sürümüne sahip Chrome node'u.
-    shm_size: "2gb"  # Paylaşılan bellek boyutunu 2 GB olarak ayarlar. Bu, tarayıcının çökmesini engellemek için gereklidir.
+      - "4445:4444"
+      - "4442:4442"
+      - "4443:4443"
+    networks:
+      - selenium-grid
+
+  ChromeService:
+    image: selenium/node-chrome:4.9.0
+    shm_size: "2gb"
     ports:
-      - "5900"  # VNC erişimi için kullanılacak port. Uzaktan tarayıcıyı izlemek için VNC bağlantısı yapılabilir.
-      - "7900"  # İkinci bir port (örneğin, tarayıcıyı görsel olarak izlemek için) açılabilir.
+      - "5900:5900"
     environment:
-      - SE_EVENT_BUS_HOST=seleniumHub  # Hub'ın konteyner adı, Chrome node'unun Hub ile iletişim kurması için.
-      - SE_EVENT_BUS_PUBLISH_PORT=4442  # Hub'a olay göndermek için kullanılacak port.
-      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443  # Hub'dan olay almak için kullanılacak port.
-      - SE_VNC_NO_PASSWORD=1  # VNC bağlantısı sırasında parola olmadan erişimi sağlar.
-    depends_on: # Hub servisine bağımlılığı belirtir. Chrome servisi, Hub servisinden sonra başlatılır.
+      - SE_EVENT_BUS_HOST=seleniumHub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_VNC_NO_PASSWORD=1
+    depends_on:
       - HubService
-  FirefoxService: # Firefox tarayıcı node'unu tanımlar.
-    image: selenium/node-firefox:4.9.0  # Kullanılacak Docker imajı. Selenium'un 4.9.0 sürümüne sahip Firefox node'u.
-    shm_size: "2gb"  # Paylaşılan bellek boyutunu 2 GB olarak ayarlar.
+    networks:
+      - selenium-grid
+
+  FirefoxService:
+    image: selenium/node-firefox:4.9.0
+    shm_size: "2gb"
     ports:
-      - "5900"  # VNC erişimi için kullanılacak port.
-      - "7900"  # İkinci port (örneğin, tarayıcıyı izlemek için) açılabilir.
+      - "5901:5900"
     environment:
-      - SE_EVENT_BUS_HOST=seleniumHub  # Hub'ın konteyner adı, Firefox node'unun Hub ile iletişim kurması için.
-      - SE_EVENT_BUS_PUBLISH_PORT=4442  # Hub'a olay göndermek için kullanılacak port.
-      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443  # Hub'dan olay almak için kullanılacak port.
-      - SE_VNC_NO_PASSWORD=1  # VNC bağlantısı sırasında parola olmadan erişimi sağlar.
-    depends_on: # Hub servisine bağımlılığı belirtir. Firefox servisi, Hub servisinden sonra başlatılır.
+      - SE_EVENT_BUS_HOST=seleniumHub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_VNC_NO_PASSWORD=1
+    depends_on:
       - HubService
-  EdgeService: # Edge tarayıcı node'unu tanımlar.
-    image: selenium/node-edge:4.9.0  # Kullanılacak Docker imajı. Selenium'un 4.9.0 sürümüne sahip Edge node'u.
-    shm_size: "2gb"  # Paylaşılan bellek boyutunu 2 GB olarak ayarlar.
+    networks:
+      - selenium-grid
+
+  EdgeService:
+    image: selenium/node-edge:4.9.0
+    shm_size: "2gb"
     ports:
-      - "5900"  # VNC erişimi için kullanılacak port.
-      - "7900"  # İkinci port (örneğin, tarayıcıyı izlemek için) açılabilir.
+      - "5902:5900"
     environment:
-      - SE_EVENT_BUS_HOST=seleniumHub  # Hub'ın konteyner adı, Edge node'unun Hub ile iletişim kurması için.
-      - SE_EVENT_BUS_PUBLISH_PORT=4442  # Hub'a olay göndermek için kullanılacak port.
-      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443  # Hub'dan olay almak için kullanılacak port.
-      - SE_VNC_NO_PASSWORD=1  # VNC bağlantısı sırasında parola olmadan erişimi sağlar.
-    depends_on: # Hub servisine bağımlılığı belirtir. Edge servisi, Hub servisinden sonra başlatılır.
-      - HubService  # Hub servisinin başlatılmasını bekler, ardından Edge servisi çalışır.
+      - SE_EVENT_BUS_HOST=seleniumHub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_VNC_NO_PASSWORD=1
+    depends_on:
+      - HubService
+    networks:
+      - selenium-grid
+
+networks:
+  selenium-grid:
+    driver: bridge
+
 volumes:
   jenkins_home:
